@@ -1,0 +1,47 @@
+CREATE TABLE IF NOT EXISTS students (
+  id VARCHAR(50) PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  class_name VARCHAR(50) NOT NULL,
+  status VARCHAR(20) DEFAULT 'active',
+  nfc_uid VARCHAR(255) NULL,
+  face_embedding JSON NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS teachers (
+  id VARCHAR(50) PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  subject VARCHAR(255) NOT NULL,
+  status VARCHAR(20) DEFAULT 'active',
+  nfc_uid VARCHAR(255) NULL,
+  face_embedding JSON NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS attendance_logs (
+  id VARCHAR(100) PRIMARY KEY,
+  person_id VARCHAR(50) NOT NULL,
+  person_role VARCHAR(20) NOT NULL,
+  person_name VARCHAR(255) NOT NULL,
+  status VARCHAR(20) NOT NULL,
+  attendance_date DATE NOT NULL,
+  attendance_time TIME NOT NULL,
+  source VARCHAR(20) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS face_templates (
+  id VARCHAR(100) PRIMARY KEY,
+  person_id VARCHAR(50) NOT NULL,
+  person_role VARCHAR(20) NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  embedding JSON NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS admin_users (
+  id SERIAL PRIMARY KEY,
+  username VARCHAR(100) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  role VARCHAR(50) DEFAULT 'superadmin'
+);

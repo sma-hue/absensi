@@ -37,7 +37,9 @@ const defaultData = {
   admins: [
     { username: 'admin', password: 'admin123', role: 'superadmin' }
   ],
-  attendance: []
+  attendance: [],
+  faceTemplates: [],
+  nfcRegistrations: []
 };
 
 function ensureDataFile() {
@@ -60,7 +62,9 @@ function readData() {
       teachers: Array.isArray(data.teachers) ? data.teachers : defaultData.teachers,
       classes: Array.isArray(data.classes) ? data.classes : defaultData.classes,
       admins: Array.isArray(data.admins) ? data.admins : defaultData.admins,
-      attendance: Array.isArray(data.attendance) ? data.attendance : []
+      attendance: Array.isArray(data.attendance) ? data.attendance : [],
+      faceTemplates: Array.isArray(data.faceTemplates) ? data.faceTemplates : [],
+      nfcRegistrations: Array.isArray(data.nfcRegistrations) ? data.nfcRegistrations : []
     };
   } catch (error) {
     return { ...defaultData };
@@ -92,7 +96,8 @@ function buildUserList(data) {
     name: student.name,
     role: 'student',
     className: student.className,
-    status: student.status
+    status: student.status,
+    nfcUid: student.nfcUid || null
   }));
 
   const teachers = data.teachers.map((teacher) => ({
@@ -100,7 +105,8 @@ function buildUserList(data) {
     name: teacher.name,
     role: 'teacher',
     subject: teacher.subject,
-    status: teacher.status
+    status: teacher.status,
+    nfcUid: teacher.nfcUid || null
   }));
 
   return [...students, ...teachers];
@@ -133,6 +139,28 @@ function buildReport(data, date = new Date().toISOString().slice(0, 10), classFi
 
 function buildClassList(data) {
   return Array.isArray(data.classes) ? data.classes : defaultData.classes;
+}
+
+function createFaceEmbedding(imageData) {
+  const raw = typeof imageData === 'string' ? imageData : '';
+  const normalized = raw.replace(/^data:image\/[a-zA-Z0-9.+-]+;base64,/, '').trim();
+  const hash = crypto.createHash('sha256').update(normalized || 'no-image').digest('hex');
+  const bytes = Buffer.from(hash, 'hex');
+  return Array.from(bytes).slice(0, 32).map((byte) => byte / 255);
+}
+
+function compareFaceEmbeddings(a, b) {
+  if (!Array.isArray(a) || !Array.isArray(b) || !a.length || !b.length) return 0;
+  const maxLength = Math.max(a.length, b.length);
+  let difference = 0;
+
+  for (let index = 0; index < maxLength; index += 1) {
+    const left = a[index] ?? 0;
+    const right = b[index] ?? 0;
+    difference += Math.abs(left - right);
+  }
+
+  return 1 - (difference / maxLength);
 }
 
 function generateAdminToken(username) {
@@ -301,6 +329,79 @@ app.get('/api/attendance', (req, res) => {
   res.json(entries.slice().reverse());
 });
 
+app.post('/api/faces/enroll', requireAdminToken, (req, res) => {
+  const { personId, name, imageData } = req.body || {};
+
+  if (!personId || !name || !imageData) {
+    return res.status(400).json({ message: 'personId, nama, dan imageData wajib diisi' });
+  }
+
+  const data = readData();
+  const person = data.students.find((student) => student.id === personId || student.name === name)
+    || data.teachers.find((teacher) => teacher.id === personId || teacher.name === name);
+
+  if (!person) {
+    return res.status(404).json({ message: 'Data siswa atau guru tidak ditemukan' });
+  }
+
+  const embedding = createFaceEmbedding(imageData);
+  const faceTemplate = {
+    id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+    personId: person.id,
+    name: person.name,
+    role: person.className ? 'student' : 'teacher',
+    embedding,
+    imageData,
+    createdAt: new Date().toISOString()
+  };
+
+  const existingIndex = data.faceTemplates.findIndex((template) => template.personId === person.id);
+  if (existingIndex >= 0) {
+    data.faceTemplates[existingIndex] = faceTemplate;
+  } else {
+    data.faceTemplates.push(faceTemplate);
+  }
+
+  writeData(data);
+
+  return res.status(201).json({ ok: true, personId: person.id, name: person.name, embedding: faceTemplate.embedding });
+});
+
+app.post('/api/faces/recognize', (req, res) => {
+  const { imageData } = req.body || {};
+
+  if (!imageData) {
+    return res.status(400).json({ status: 'error', message: 'imageData wajib diisi' });
+  }
+
+  const data = readData();
+  const target = createFaceEmbedding(imageData);
+
+  let bestMatch = null;
+  let bestScore = 0;
+
+  for (const template of data.faceTemplates || []) {
+    const score = compareFaceEmbeddings(target, template.embedding || []);
+    if (score > bestScore) {
+      bestScore = score;
+      bestMatch = template;
+    }
+  }
+
+  if (!bestMatch || bestScore < 0.98) {
+    return res.status(404).json({ status: 'error', message: 'Wajah tidak dikenali' });
+  }
+
+  const match = data.students.find((student) => student.id === bestMatch.personId)
+    || data.teachers.find((teacher) => teacher.id === bestMatch.personId);
+
+  return res.json({
+    status: 'success',
+    confidence: Number(bestScore.toFixed(4)),
+    person: match ? { id: match.id, name: match.name, role: match.className ? 'student' : 'teacher' } : { id: bestMatch.personId, name: bestMatch.name, role: bestMatch.role }
+  });
+});
+
 app.get('/api/kiosk/status', (req, res) => {
   res.json({
     mode: 'idle',
@@ -333,19 +434,38 @@ app.post('/api/kiosk/scan', (req, res) => {
   }
 
   const data = readData();
-  const person = data.students.find((student) => student.id === uid || student.name === name)
-    || data.teachers.find((teacher) => teacher.id === uid || teacher.name === name);
+  const person = data.students.find((student) => student.id === uid || student.nfcUid === uid || student.name === name)
+    || data.teachers.find((teacher) => teacher.id === uid || teacher.nfcUid === uid || teacher.name === name)
+    || (() => {
+      const templates = data.faceTemplates || [];
+      const face = templates.find((item) => item.personId === name || item.name === name);
+      if (!face) return null;
+      return data.students.find((student) => student.id === face.personId)
+        || data.teachers.find((teacher) => teacher.id === face.personId);
+    })();
 
   if (!person) {
     return res.status(404).json({ status: 'error', message: 'Data tidak terdaftar di sistem' });
   }
 
   const now = new Date();
+  const role = person.className ? 'student' : 'teacher';
+  const lastEntry = [...data.attendance]
+    .filter((entry) => entry.personId === person.id && entry.role === role)
+    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+
+  if (lastEntry && now.getTime() - new Date(lastEntry.timestamp).getTime() < 60000) {
+    return res.status(429).json({
+      status: 'error',
+      message: 'Absensi sudah dicatat dalam 1 menit terakhir. Silakan tunggu beberapa detik.'
+    });
+  }
+
   const record = {
     id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
     personId: person.id,
     name: person.name,
-    role: person.className ? 'student' : 'teacher',
+    role,
     status: 'present',
     date: now.toISOString().slice(0, 10),
     time: now.toTimeString().slice(0, 5),
@@ -360,7 +480,7 @@ app.post('/api/kiosk/scan', (req, res) => {
   return res.json({
     status: 'success',
     mode: 'idle',
-    person: { id: person.id, name: person.name, role: person.className ? 'student' : 'teacher' },
+    person: { id: person.id, name: person.name, role },
     attendance: record
   });
 });
@@ -370,7 +490,7 @@ app.get('/kiosk', (req, res) => {
 });
 
 app.post('/api/students', requireAdminToken, (req, res) => {
-  const { id, name, className, status = 'active' } = req.body;
+  const { id, name, className, status = 'active', nfcUid } = req.body;
 
   if (!id || !name || !className) {
     return res.status(400).json({ message: 'ID, nama, dan kelas wajib diisi' });
@@ -383,7 +503,7 @@ app.post('/api/students', requireAdminToken, (req, res) => {
     return res.status(409).json({ message: 'ID siswa sudah terdaftar' });
   }
 
-  const student = { id, name, className, status };
+  const student = { id, name, className, status, ...(nfcUid ? { nfcUid } : {}) };
   data.students.push(student);
   writeData(data);
 
@@ -391,7 +511,7 @@ app.post('/api/students', requireAdminToken, (req, res) => {
 });
 
 app.post('/api/teachers', requireAdminToken, (req, res) => {
-  const { id, name, subject, status = 'active' } = req.body;
+  const { id, name, subject, status = 'active', nfcUid } = req.body;
 
   if (!id || !name || !subject) {
     return res.status(400).json({ message: 'ID, nama, dan mata pelajaran wajib diisi' });
@@ -404,11 +524,41 @@ app.post('/api/teachers', requireAdminToken, (req, res) => {
     return res.status(409).json({ message: 'ID guru sudah terdaftar' });
   }
 
-  const teacher = { id, name, subject, status };
+  const teacher = { id, name, subject, status, ...(nfcUid ? { nfcUid } : {}) };
   data.teachers.push(teacher);
   writeData(data);
 
   return res.status(201).json(teacher);
+});
+
+app.post('/api/nfc/register', requireAdminToken, (req, res) => {
+  const { personId, role, uid } = req.body || {};
+
+  if (!personId || !role || !uid) {
+    return res.status(400).json({ message: 'personId, role, dan uid kartu wajib diisi' });
+  }
+
+  const data = readData();
+  const collection = role === 'teacher' ? data.teachers : data.students;
+  const personIndex = collection.findIndex((item) => item.id === personId || item.name === personId);
+
+  if (personIndex === -1) {
+    return res.status(404).json({ message: 'Siswa atau guru tidak ditemukan' });
+  }
+
+  const person = collection[personIndex];
+  person.nfcUid = uid;
+  writeData(data);
+
+  return res.json({
+    ok: true,
+    person: {
+      id: person.id,
+      name: person.name,
+      role,
+      nfcUid: uid
+    }
+  });
 });
 
 app.put('/api/students/:id', requireAdminToken, (req, res) => {
@@ -521,6 +671,284 @@ app.post('/api/attendance', (req, res) => {
   io.emit('attendance:update', { record, date, time });
 
   return res.status(201).json(record);
+});
+
+// ===== NEW ENDPOINTS FOR KIOSK (NFC + FACE RECOGNITION) =====
+
+// NFC Scan Endpoint
+app.post('/api/attendance/scan-nfc', (req, res) => {
+  const { nfcUid } = req.body || {};
+
+  if (!nfcUid) {
+    return res.status(400).json({
+      success: false,
+      message: 'NFC UID diperlukan'
+    });
+  }
+
+  const data = readData();
+  
+  // Find person by NFC UID
+  const student = data.students.find((s) => s.nfcUid === nfcUid);
+  const teacher = data.teachers.find((t) => t.nfcUid === nfcUid);
+  const person = student || teacher;
+
+  if (!person) {
+    return res.status(404).json({
+      success: false,
+      message: 'Kartu NFC tidak terdaftar'
+    });
+  }
+
+  // Check cooldown (prevent duplicate scans)
+  const now = new Date();
+  const role = student ? 'student' : 'teacher';
+  const lastEntry = [...data.attendance]
+    .filter((entry) => entry.personId === person.id && entry.role === role)
+    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+
+  if (lastEntry && now.getTime() - new Date(lastEntry.timestamp).getTime() < 60000) {
+    return res.status(429).json({
+      success: false,
+      message: 'Sudah tercatat. Silakan tunggu 1 menit'
+    });
+  }
+
+  // Create attendance record
+  const date = now.toISOString().slice(0, 10);
+  const time = now.toTimeString().slice(0, 5);
+
+  const record = {
+    id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+    personId: person.id,
+    personName: person.name,
+    personRole: role,
+    status: 'present',
+    attendanceDate: date,
+    attendanceTime: time,
+    source: 'nfc',
+    scanMethod: 'nfc_uid',
+    createdAt: now.toISOString()
+  };
+
+  data.attendance.push(record);
+  writeData(data);
+
+  // Emit WebSocket event
+  io.emit('attendance:result', {
+    success: true,
+    person: {
+      personName: person.name,
+      className: person.className || person.subject,
+      photoUrl: person.photoPath || '/default-photo.png',
+      confidence: 1.0
+    },
+    record
+  });
+
+  return res.json({
+    success: true,
+    message: 'Scan berhasil',
+    data: {
+      personName: person.name,
+      className: person.className || person.subject,
+      photoUrl: person.photoPath || '/default-photo.png',
+      confidence: 1.0
+    }
+  });
+});
+
+// Face Recognition Scan Endpoint
+app.post('/api/attendance/scan-face', (req, res) => {
+  const { faceImage } = req.body || {};
+
+  if (!faceImage) {
+    return res.status(400).json({
+      success: false,
+      message: 'Foto wajah diperlukan'
+    });
+  }
+
+  const data = readData();
+  const target = createFaceEmbedding(faceImage);
+
+  // Find best matching face
+  let bestMatch = null;
+  let bestScore = 0;
+
+  for (const template of data.faceTemplates || []) {
+    const score = compareFaceEmbeddings(target, template.embedding || []);
+    if (score > bestScore) {
+      bestScore = score;
+      bestMatch = template;
+    }
+  }
+
+  // Minimum confidence threshold: 60%
+  if (!bestMatch || bestScore < 0.6) {
+    return res.status(404).json({
+      success: false,
+      message: 'Wajah tidak dikenali'
+    });
+  }
+
+  // Find person details
+  const person = data.students.find((s) => s.id === bestMatch.personId)
+    || data.teachers.find((t) => t.id === bestMatch.personId);
+
+  if (!person) {
+    return res.status(404).json({
+      success: false,
+      message: 'Data wajah tidak valid'
+    });
+  }
+
+  // Check cooldown
+  const now = new Date();
+  const role = person.className ? 'student' : 'teacher';
+  const lastEntry = [...data.attendance]
+    .filter((entry) => entry.personId === person.id && entry.role === role)
+    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+
+  if (lastEntry && now.getTime() - new Date(lastEntry.timestamp).getTime() < 60000) {
+    return res.status(429).json({
+      success: false,
+      message: 'Sudah tercatat. Silakan tunggu 1 menit'
+    });
+  }
+
+  // Create attendance record
+  const date = now.toISOString().slice(0, 10);
+  const time = now.toTimeString().slice(0, 5);
+
+  const record = {
+    id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+    personId: person.id,
+    personName: person.name,
+    personRole: role,
+    status: 'present',
+    attendanceDate: date,
+    attendanceTime: time,
+    source: 'face_recognition',
+    scanMethod: 'face_recognition',
+    confidence: Number(bestScore.toFixed(4)),
+    createdAt: now.toISOString()
+  };
+
+  data.attendance.push(record);
+  writeData(data);
+
+  // Emit WebSocket event
+  io.emit('attendance:result', {
+    success: true,
+    person: {
+      personName: person.name,
+      className: person.className || person.subject,
+      photoUrl: person.photoPath || '/default-photo.png',
+      confidence: Number(bestScore.toFixed(4))
+    },
+    record
+  });
+
+  return res.json({
+    success: true,
+    message: 'Scan berhasil',
+    data: {
+      personName: person.name,
+      className: person.className || person.subject,
+      photoUrl: person.photoPath || '/default-photo.png',
+      confidence: Number(bestScore.toFixed(4))
+    }
+  });
+});
+
+// Admin: Register NFC UID for student/teacher
+app.post('/api/admin/enroll-nfc', requireAdminToken, (req, res) => {
+  const { personId, role, nfcUid } = req.body || {};
+
+  if (!personId || !role || !nfcUid) {
+    return res.status(400).json({
+      success: false,
+      message: 'personId, role, dan nfcUid diperlukan'
+    });
+  }
+
+  const data = readData();
+  const collection = role === 'teacher' ? data.teachers : data.students;
+  const person = collection.find((p) => p.id === personId);
+
+  if (!person) {
+    return res.status(404).json({
+      success: false,
+      message: 'Siswa/guru tidak ditemukan'
+    });
+  }
+
+  person.nfcUid = nfcUid;
+  writeData(data);
+
+  return res.json({
+    success: true,
+    message: 'NFC UID berhasil terdaftar',
+    data: {
+      personId: person.id,
+      personName: person.name,
+      nfcUid
+    }
+  });
+});
+
+// Admin: Enroll Face for student/teacher
+app.post('/api/admin/enroll-face', requireAdminToken, (req, res) => {
+  const { personId, role, faceImage } = req.body || {};
+
+  if (!personId || !role || !faceImage) {
+    return res.status(400).json({
+      success: false,
+      message: 'personId, role, dan faceImage diperlukan'
+    });
+  }
+
+  const data = readData();
+  const collection = role === 'teacher' ? data.teachers : data.students;
+  const person = collection.find((p) => p.id === personId);
+
+  if (!person) {
+    return res.status(404).json({
+      success: false,
+      message: 'Siswa/guru tidak ditemukan'
+    });
+  }
+
+  const embedding = createFaceEmbedding(faceImage);
+  const template = {
+    id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+    personId: person.id,
+    personRole: role,
+    name: person.name,
+    embedding,
+    createdAt: new Date().toISOString()
+  };
+
+  const existingIndex = (data.faceTemplates || []).findIndex((t) => t.personId === person.id);
+  if (existingIndex >= 0) {
+    data.faceTemplates[existingIndex] = template;
+  } else {
+    if (!data.faceTemplates) data.faceTemplates = [];
+    data.faceTemplates.push(template);
+  }
+
+  writeData(data);
+
+  return res.json({
+    success: true,
+    message: 'Wajah berhasil terdaftar',
+    data: {
+      personId: person.id,
+      personName: person.name,
+      embeddingSize: embedding.length
+    }
+  });
 });
 
 io.on('connection', (socket) => {

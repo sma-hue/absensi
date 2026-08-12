@@ -45,7 +45,37 @@
         </section>
 
         <section class="card">
+          <h2>Registrasi Kartu & Wajah</h2>
+          <form id="nfcRegisterForm" class="mini-form">
+            <label>
+              <span>Pilih Guru</span>
+              <select id="nfcTeacherSelect"></select>
+            </label>
+            <label>
+              <span>UID Kartu NFC</span>
+              <input type="text" id="nfcUidInput" placeholder="Contoh: 04A1B2C3" required />
+            </label>
+            <button type="submit">Simpan Kartu NFC</button>
+          </form>
+
+          <form id="faceEnrollForm" class="mini-form" style="margin-top: 18px;">
+            <label>
+              <span>Pilih Guru</span>
+              <select id="faceTeacherSelect"></select>
+            </label>
+            <label>
+              <span>Foto Wajah</span>
+              <input type="file" id="faceImageInput" accept="image/*" required />
+            </label>
+            <button type="submit">Enroll Wajah</button>
+          </form>
+        </section>
+
+        <section class="card">
           <h2>Data Guru</h2>
+          <div class="toolbar">
+            <input id="teacherSearch" type="search" placeholder="Cari nama atau ID guru..." />
+          </div>
           <table>
             <thead>
               <tr>

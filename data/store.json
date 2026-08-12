@@ -29,108 +29,6 @@
       "name": "Iqbal Hidayat",
       "className": "XII-C",
       "status": "active"
-    },
-    {
-      "id": "S-999",
-      "name": "Budi Santoso",
-      "className": "X-B",
-      "status": "active"
-    },
-    {
-      "id": "S-1786491312056-dbcc46",
-      "name": "Budi Santoso",
-      "className": "X-B",
-      "status": "active"
-    },
-    {
-      "id": "S-1786491394363-27268e",
-      "name": "Budi Santoso",
-      "className": "X-B",
-      "status": "active"
-    },
-    {
-      "id": "S-1786491476576-78fd19",
-      "name": "Budi Santoso",
-      "className": "X-B",
-      "status": "active"
-    },
-    {
-      "id": "S-1786491504171-b8ba44",
-      "name": "Budi Santoso",
-      "className": "X-B",
-      "status": "active"
-    },
-    {
-      "id": "S-1786491615639-326328",
-      "name": "Budi Santoso",
-      "className": "X-B",
-      "status": "active"
-    },
-    {
-      "id": "S-1786491847780-e86fd5",
-      "name": "Budi Santoso",
-      "className": "X-B",
-      "status": "active"
-    },
-    {
-      "id": "S-1786492147118-ba6313",
-      "name": "Budi Santoso",
-      "className": "X-B",
-      "status": "active"
-    },
-    {
-      "id": "S-1786492279108-a7dad2",
-      "name": "Budi Santoso",
-      "className": "X-B",
-      "status": "active"
-    },
-    {
-      "id": "S-1786492465173-efbc59",
-      "name": "Citra Wijaya",
-      "className": "X-C",
-      "status": "active"
-    },
-    {
-      "id": "S-1786492465183-d93167",
-      "name": "Budi Santoso",
-      "className": "X-B",
-      "status": "active"
-    },
-    {
-      "id": "S-1786492523302-e75067",
-      "name": "Citra Wijaya",
-      "className": "X-C",
-      "status": "active"
-    },
-    {
-      "id": "S-1786492855763-1b7de9",
-      "name": "Citra Wijaya",
-      "className": "X-C",
-      "status": "active"
-    },
-    {
-      "id": "S-1786492887895-09b362",
-      "name": "Citra Wijaya",
-      "className": "X-C",
-      "status": "active"
-    },
-    {
-      "id": "S-1786492887914-d58b86",
-      "name": "Budi Santoso",
-      "className": "X-B",
-      "status": "active"
-    },
-    {
-      "id": "S-1786493275583-24557b",
-      "name": "Citra Wijaya",
-      "className": "X-C",
-      "status": "active"
-    },
-    {
-      "id": "S-1786493275601-c5ac35",
-      "name": "Budi Santoso",
-      "className": "X-B",
-      "status": "active"
     }
   ],
   "teachers": [
@@ -150,78 +48,6 @@
       "id": "G-203",
       "name": "Ustadz Fikri",
       "subject": "Matematika",
-      "status": "active"
-    },
-    {
-      "id": "G-999",
-      "name": "Ibu Sari",
-      "subject": "IPA",
-      "status": "active"
-    },
-    {
-      "id": "G-1786491312077-6db546",
-      "name": "Ibu Sari",
-      "subject": "IPA",
-      "status": "active"
-    },
-    {
-      "id": "G-1786491394389-12d1dd",
-      "name": "Ibu Sari",
-      "subject": "IPA",
-      "status": "active"
-    },
-    {
-      "id": "G-1786491476584-b4792e",
-      "name": "Ibu Sari",
-      "subject": "IPA",
-      "status": "active"
-    },
-    {
-      "id": "G-1786491504179-174e5f",
-      "name": "Ibu Sari",
-      "subject": "IPA",
-      "status": "active"
-    },
-    {
-      "id": "G-1786491615667-cd8ed2",
-      "name": "Ibu Sari",
-      "subject": "IPA",
-      "status": "active"
-    },
-    {
-      "id": "G-1786491847789-7fbcea",
-      "name": "Ibu Sari",
-      "subject": "IPA",
-      "status": "active"
-    },
-    {
-      "id": "G-1786492147125-35a9e6",
-      "name": "Ibu Sari",
-      "subject": "IPA",
-      "status": "active"
-    },
-    {
-      "id": "G-1786492279125-23ae4f",
-      "name": "Ibu Sari",
-      "subject": "IPA",
-      "status": "active"
-    },
-    {
-      "id": "G-1786492465202-76bd98",
-      "name": "Ibu Sari",
-      "subject": "IPA",
-      "status": "active"
-    },
-    {
-      "id": "G-1786492887924-25c879",
-      "name": "Ibu Sari",
-      "subject": "IPA",
-      "status": "active"
-    },
-    {
-      "id": "G-1786493275611-d7db63",
-      "name": "Ibu Sari",
-      "subject": "IPA",
       "status": "active"
     }
   ],
@@ -249,120 +75,22 @@
     {
       "username": "admin",
       "password": "admin123",
-      "role": "superadmin",
-      "token": "a8da3bbb508ce290e84da4b4902b662e921407022b65cbdde69a0c718c1d773a"
+      "role": "superadmin"
     }
   ],
   "attendance": [
     {
-      "id": "3f7c2bc5-b6fe-43f5-8b39-d4ec34f5a32a",
-      "personId": "S-101",
-      "name": "Ahmad Fauzi",
-      "role": "student",
-      "status": "present",
-      "date": "2026-08-11",
-      "time": "23:38",
-      "timestamp": "2026-08-11T23:38:24.193Z",
-      "source": "nfc"
-    },
-    {
-      "id": "1311313a-b11f-47f1-a5e6-8e9d9dc50d44",
-      "personId": "S-101",
-      "name": "Ahmad Fauzi",
-      "role": "student",
-      "status": "present",
-      "date": "2026-08-11",
-      "time": "23:40",
-      "timestamp": "2026-08-11T23:40:15.680Z",
-      "source": "nfc"
-    },
-    {
-      "id": "cd7b94e0-0c50-47b6-ae98-7c11168ca704",
-      "personId": "S-101",
-      "name": "Ahmad Fauzi",
-      "role": "student",
-      "status": "present",
-      "date": "2026-08-11",
-      "time": "23:44",
-      "timestamp": "2026-08-11T23:44:07.811Z",
-      "source": "nfc"
-    },
-    {
-      "id": "31cd2a21-3bb8-4e4b-b3bf-a7bc51efd84b",
-      "personId": "S-101",
-      "name": "Ahmad Fauzi",
-      "role": "student",
-      "status": "present",
-      "date": "2026-08-11",
-      "time": "23:49",
-      "timestamp": "2026-08-11T23:49:07.159Z",
-      "source": "nfc"
-    },
-    {
-      "id": "eb6302cf-5218-45b6-9633-dfaf9af2d637",
-      "personId": "S-101",
-      "name": "Ahmad Fauzi",
-      "role": "student",
-      "status": "present",
-      "date": "2026-08-11",
-      "time": "23:51",
-      "timestamp": "2026-08-11T23:51:19.149Z",
-      "source": "nfc"
-    },
-    {
-      "id": "82de7d1a-a430-4f29-a26e-f0e8a0686acc",
-      "personId": "S-101",
-      "name": "Ahmad Fauzi",
-      "role": "student",
-      "status": "present",
-      "date": "2026-08-11",
-      "time": "23:54",
-      "timestamp": "2026-08-11T23:54:25.235Z",
-      "source": "nfc"
-    },
-    {
-      "id": "d78a9d93-9d4b-4666-841a-2e8b59480293",
-      "personId": "S-101",
-      "name": "Ahmad Fauzi",
-      "role": "student",
-      "status": "present",
-      "date": "2026-08-11",
-      "time": "23:55",
-      "timestamp": "2026-08-11T23:55:23.350Z",
-      "source": "nfc"
-    },
-    {
-      "id": "68e41e32-9715-4830-87dd-d49f4dfe2537",
+      "id": "4b3e9f9b-0bb1-4233-a48b-34b828789a82",
       "personId": "S-101",
       "name": "Ahmad Fauzi",
       "role": "student",
       "status": "present",
       "date": "2026-08-12",
-      "time": "00:00",
-      "timestamp": "2026-08-12T00:00:55.830Z",
-      "source": "nfc"
-    },
-    {
-      "id": "eced36a7-bea5-455d-9552-b47167d1673f",
-      "personId": "S-101",
-      "name": "Ahmad Fauzi",
-      "role": "student",
-      "status": "present",
-      "date": "2026-08-12",
-      "time": "00:01",
-      "timestamp": "2026-08-12T00:01:27.949Z",
-      "source": "nfc"
-    },
-    {
-      "id": "cf6b5d17-a54f-4455-852b-093b534d14b2",
-      "personId": "S-101",
-      "name": "Ahmad Fauzi",
-      "role": "student",
-      "status": "present",
-      "date": "2026-08-12",
-      "time": "00:07",
-      "timestamp": "2026-08-12T00:07:55.636Z",
+      "time": "00:31",
+      "timestamp": "2026-08-12T00:31:16.873Z",
       "source": "nfc"
     }
-  ]
+  ],
+  "faceTemplates": [],
+  "nfcRegistrations": []
 }

@@ -45,6 +45,33 @@
         </section>
 
         <section class="card">
+          <h2>Registrasi Kartu & Wajah</h2>
+          <form id="nfcRegisterForm" class="mini-form">
+            <label>
+              <span>Pilih Siswa</span>
+              <select id="nfcStudentSelect"></select>
+            </label>
+            <label>
+              <span>UID Kartu NFC</span>
+              <input type="text" id="nfcUidInput" placeholder="Contoh: 04A1B2C3" required />
+            </label>
+            <button type="submit">Simpan Kartu NFC</button>
+          </form>
+
+          <form id="faceEnrollForm" class="mini-form" style="margin-top: 18px;">
+            <label>
+              <span>Pilih Siswa</span>
+              <select id="faceStudentSelect"></select>
+            </label>
+            <label>
+              <span>Foto Wajah</span>
+              <input type="file" id="faceImageInput" accept="image/*" required />
+            </label>
+            <button type="submit">Enroll Wajah</button>
+          </form>
+        </section>
+
+        <section class="card">
           <h2>Data Kelas</h2>
           <div id="classesList" class="classes-list"></div>
         </section>
@@ -52,6 +79,9 @@
 
       <section class="card">
         <h2>Daftar Siswa</h2>
+        <div class="toolbar">
+          <input id="studentSearch" type="search" placeholder="Cari nama atau ID siswa..." />
+        </div>
         <table>
           <thead>
             <tr>

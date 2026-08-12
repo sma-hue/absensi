@@ -1,6 +1,44 @@
-const test = require('node:test');
+const fs = require('node:fs');
+const path = require('node:path');
+const { test, beforeEach } = require('node:test');
 const assert = require('node:assert/strict');
 const app = require('../server');
+
+const storePath = path.join(__dirname, '..', 'data', 'store.json');
+const defaultState = {
+  students: [
+    { id: 'S-101', name: 'Ahmad Fauzi', className: 'X-A', status: 'active' },
+    { id: 'S-102', name: 'Siti Aisyah', className: 'X-A', status: 'active' },
+    { id: 'S-103', name: 'Rizki Pratama', className: 'XI-B', status: 'active' },
+    { id: 'S-104', name: 'Nadia Putri', className: 'XI-B', status: 'active' },
+    { id: 'S-105', name: 'Iqbal Hidayat', className: 'XII-C', status: 'active' }
+  ],
+  teachers: [
+    { id: 'G-201', name: 'Ustadz Rahmat', subject: 'Pendidikan Agama', status: 'active' },
+    { id: 'G-202', name: 'Ibu Aulia', subject: 'Bahasa Indonesia', status: 'active' },
+    { id: 'G-203', name: 'Ustadz Fikri', subject: 'Matematika', status: 'active' }
+  ],
+  classes: [
+    { id: 'X-A', name: 'Kelas X-A', level: 'X', mentor: 'Ustadz Rahmat' },
+    { id: 'XI-B', name: 'Kelas XI-B', level: 'XI', mentor: 'Ibu Aulia' },
+    { id: 'XII-C', name: 'Kelas XII-C', level: 'XII', mentor: 'Ustadz Fikri' }
+  ],
+  admins: [
+    { username: 'admin', password: 'admin123', role: 'superadmin' }
+  ],
+  attendance: [],
+  faceTemplates: [],
+  nfcRegistrations: []
+};
+
+const resetStore = () => {
+  fs.mkdirSync(path.dirname(storePath), { recursive: true });
+  fs.writeFileSync(storePath, JSON.stringify(defaultState, null, 2));
+};
+
+beforeEach(() => {
+  resetStore();
+});
 
 const request = async (path, init) => {
   const server = app.listen();
@@ -132,6 +170,66 @@ test('can create a new teacher via admin endpoint', async () => {
   assert.equal(body.subject, 'IPA');
 });
 
+test('nfc registration endpoint stores the card UID for a student', async () => {
+  const login = await request('/api/admin/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: 'admin', password: 'admin123' })
+  });
+
+  const { response, body } = await request('/api/nfc/register', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${login.body.token}`
+    },
+    body: JSON.stringify({
+      personId: 'S-101',
+      role: 'student',
+      uid: 'NFC-REGISTER-001'
+    })
+  });
+
+  assert.equal(response.status, 200);
+  assert.equal(body.person.id, 'S-101');
+  assert.equal(body.person.nfcUid, 'NFC-REGISTER-001');
+});
+
+test('kiosk scan identifies a person by registered NFC UID', async () => {
+  const login = await request('/api/admin/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: 'admin', password: 'admin123' })
+  });
+
+  await request('/api/nfc/register', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${login.body.token}`
+    },
+    body: JSON.stringify({
+      personId: 'G-202',
+      role: 'teacher',
+      uid: 'NFC-TEACHER-001'
+    })
+  });
+
+  const { response, body } = await request('/api/kiosk/scan', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      type: 'nfc',
+      uid: 'NFC-TEACHER-001',
+      name: 'Ibu Aulia'
+    })
+  });
+
+  assert.equal(response.status, 200);
+  assert.equal(body.status, 'success');
+  assert.equal(body.person.name, 'Ibu Aulia');
+});
+
 test('kiosk status endpoint is available', async () => {
   const { response, body } = await request('/api/kiosk/status');
   assert.equal(response.status, 200);
@@ -144,6 +242,51 @@ test('kiosk summary endpoint returns live attendance totals', async () => {
   assert.equal(body.mode, 'idle');
   assert.ok(typeof body.totalToday === 'number');
   assert.ok(body.totalToday >= 0);
+});
+
+test('kiosk scan blocks duplicate attendance in the anti-spam window', async () => {
+  const login = await request('/api/admin/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: 'admin', password: 'admin123' })
+  });
+
+  await request('/api/nfc/register', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${login.body.token}`
+    },
+    body: JSON.stringify({
+      personId: 'S-102',
+      role: 'student',
+      uid: 'NFC-ANTI-SPAM-001'
+    })
+  });
+
+  const firstScan = await request('/api/kiosk/scan', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      type: 'nfc',
+      uid: 'NFC-ANTI-SPAM-001',
+      name: 'Siti Aisyah'
+    })
+  });
+
+  const secondScan = await request('/api/kiosk/scan', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      type: 'nfc',
+      uid: 'NFC-ANTI-SPAM-001',
+      name: 'Siti Aisyah'
+    })
+  });
+
+  assert.equal(firstScan.response.status, 200);
+  assert.equal(secondScan.response.status, 429);
+  assert.match(secondScan.body.message, /1 menit|interval|scan/i);
 });
 
 test('kiosk scan endpoint accepts NFC and face payload', async () => {

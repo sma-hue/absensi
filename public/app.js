@@ -19,6 +19,16 @@ const monthlyMonthInput = document.getElementById('monthlyMonth');
 const monthlyClassFilterSelect = document.getElementById('monthlyClassFilter');
 const exportCsvBtn = document.getElementById('exportCsvBtn');
 const exportMonthlyCsvBtn = document.getElementById('exportMonthlyCsvBtn');
+const studentSearchInput = document.getElementById('studentSearch');
+const teacherSearchInput = document.getElementById('teacherSearch');
+const nfcRegisterForm = document.getElementById('nfcRegisterForm');
+const nfcUidInput = document.getElementById('nfcUidInput');
+const nfcStudentSelect = document.getElementById('nfcStudentSelect');
+const nfcTeacherSelect = document.getElementById('nfcTeacherSelect');
+const faceEnrollForm = document.getElementById('faceEnrollForm');
+const faceStudentSelect = document.getElementById('faceStudentSelect');
+const faceTeacherSelect = document.getElementById('faceTeacherSelect');
+const faceImageInput = document.getElementById('faceImageInput');
 
 function renderDate() {
   if (!currentDate) return;
@@ -136,6 +146,24 @@ function populateClassFilter(classes) {
   if (monthlyClassFilterSelect) monthlyClassFilterSelect.innerHTML = html;
 }
 
+function populateSelection(selectElement, items, { placeholder = 'Pilih data', valueKey = 'id', labelKey = 'name', role = 'student' } = {}) {
+  if (!selectElement) return;
+
+  selectElement.innerHTML = `<option value="">${placeholder}</option>` + items.map((item) => `<option value="${item[valueKey]}">${item[labelKey]} (${item[valueKey]})</option>`).join('');
+
+  if (selectElement.dataset.defaultValue) {
+    selectElement.value = selectElement.dataset.defaultValue;
+  }
+
+  if (role === 'student' && !items.length) {
+    selectElement.innerHTML = '<option value="">Belum ada siswa</option>';
+  }
+
+  if (role === 'teacher' && !items.length) {
+    selectElement.innerHTML = '<option value="">Belum ada guru</option>';
+  }
+}
+
 function renderMonthlySummary(data) {
   const container = document.getElementById('monthlySummary');
   if (!container) return;
@@ -192,18 +220,31 @@ async function loadAttendancePage() {
   renderAttendance(attendance);
 }
 
+function applyUsersSearch(rows, query, fields) {
+  const value = (query || '').trim().toLowerCase();
+  if (!value) return rows;
+  return rows.filter((item) => fields.some((field) => String(item[field] || '').toLowerCase().includes(value)));
+}
+
 async function loadStudentsPage() {
   const [students, classes] = await Promise.all([
     fetchJson('/api/students'),
     fetchJson('/api/classes')
   ]);
-  if (studentsTable) studentsTable.innerHTML = renderRows(students, 'className', 'student');
+
+  const filteredStudents = applyUsersSearch(students, studentSearchInput ? studentSearchInput.value : '', ['id', 'name', 'className']);
+  if (studentsTable) studentsTable.innerHTML = renderRows(filteredStudents, 'className', 'student');
   if (classesList) renderClasses(classes);
+  if (nfcStudentSelect) populateSelection(nfcStudentSelect, students, { placeholder: 'Pilih siswa', role: 'student' });
+  if (faceStudentSelect) populateSelection(faceStudentSelect, students, { placeholder: 'Pilih siswa', role: 'student' });
 }
 
 async function loadTeachersPage() {
   const teachers = await fetchJson('/api/teachers');
-  if (teachersTable) teachersTable.innerHTML = renderRows(teachers, 'subject', 'teacher');
+  const filteredTeachers = applyUsersSearch(teachers, teacherSearchInput ? teacherSearchInput.value : '', ['id', 'name', 'subject']);
+  if (teachersTable) teachersTable.innerHTML = renderRows(filteredTeachers, 'subject', 'teacher');
+  if (nfcTeacherSelect) populateSelection(nfcTeacherSelect, teachers, { placeholder: 'Pilih guru', role: 'teacher' });
+  if (faceTeacherSelect) populateSelection(faceTeacherSelect, teachers, { placeholder: 'Pilih guru', role: 'teacher' });
 }
 
 async function loadReportsPage() {
@@ -323,6 +364,78 @@ if (attendanceForm) {
   });
 }
 
+async function readImageData(file) {
+  if (!file) throw new Error('Pilih file foto wajah terlebih dahulu');
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('Gagal membaca file foto'));
+    reader.readAsDataURL(file);
+  });
+}
+
+if (nfcRegisterForm) {
+  nfcRegisterForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const personId = (nfcStudentSelect ? nfcStudentSelect.value : nfcTeacherSelect?.value) || '';
+    const uid = nfcUidInput ? nfcUidInput.value.trim() : '';
+    const role = nfcStudentSelect ? 'student' : 'teacher';
+
+    if (!personId || !uid) {
+      alert('Pilih data dan isi UID kartu NFC');
+      return;
+    }
+
+    try {
+      await fetchJson('/api/admin/enroll-nfc', {
+        method: 'POST',
+        headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ personId, role, nfcUid: uid })
+      });
+      if (nfcUidInput) nfcUidInput.value = '';
+      alert('UID kartu NFC berhasil tersimpan');
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+}
+
+if (faceEnrollForm) {
+  faceEnrollForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const personId = (faceStudentSelect ? faceStudentSelect.value : faceTeacherSelect?.value) || '';
+    const file = faceImageInput ? faceImageInput.files[0] : null;
+    const role = faceStudentSelect ? 'student' : 'teacher';
+
+    if (!personId || !file) {
+      alert('Pilih siswa/guru dan foto wajah terlebih dahulu');
+      return;
+    }
+
+    try {
+      const faceImage = await readImageData(file);
+
+      await fetchJson('/api/admin/enroll-face', {
+        method: 'POST',
+        headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({
+          personId,
+          role,
+          faceImage
+        })
+      });
+
+      if (faceImageInput) faceImageInput.value = '';
+      alert('Data wajah berhasil di-enroll');
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+}
+
 if (reportDateInput) {
   reportDateInput.addEventListener('change', async () => {
     const selectedDate = reportDateInput.value || new Date().toISOString().slice(0, 10);
@@ -356,6 +469,22 @@ if (monthlyClassFilterSelect) {
     const selectedClass = monthlyClassFilterSelect.value;
     const report = await fetchJson(`/api/report/monthly?month=${monthValue}${selectedClass !== 'all' ? `&class=${selectedClass}` : ''}`);
     renderMonthlySummary(report);
+  });
+}
+
+if (studentSearchInput) {
+  studentSearchInput.addEventListener('input', async () => {
+    if (page === 'students') {
+      await loadStudentsPage();
+    }
+  });
+}
+
+if (teacherSearchInput) {
+  teacherSearchInput.addEventListener('input', async () => {
+    if (page === 'teachers') {
+      await loadTeachersPage();
+    }
   });
 }
 

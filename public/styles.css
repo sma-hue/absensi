@@ -397,6 +397,15 @@ button:active {
   margin-top: 5px;
 }
 
+.toolbar {
+  margin: 12px 0 14px;
+}
+
+.toolbar input {
+  width: 100%;
+  max-width: 380px;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
