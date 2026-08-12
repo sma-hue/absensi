@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Absensi - Siswa</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body data-page="students">
+    <div class="container">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Sypesantren Jagat Ar</p>
+          <h1>Manajemen Siswa</h1>
+        </div>
+        <nav class="topnav" aria-label="Navigasi utama">
+          <a href="/">Dashboard</a>
+          <a href="/attendance">Attendance</a>
+          <a href="/students" class="active">Students</a>
+          <a href="/teachers">Teachers</a>
+          <a href="/reports">Reports</a>
+          <a href="/kiosk">Kiosk</a>
+        </nav>
+        <div class="header-date" id="currentDate"></div>
+      </header>
+
+      <main class="content-grid">
+        <section class="card">
+          <h2>Tambah Siswa</h2>
+          <form id="studentForm" class="mini-form">
+            <label>
+              <span>ID</span>
+              <input type="text" id="studentId" placeholder="S-200" required />
+            </label>
+            <label>
+              <span>Nama</span>
+              <input type="text" id="studentName" placeholder="Nama siswa" required />
+            </label>
+            <label>
+              <span>Kelas</span>
+              <input type="text" id="studentClass" placeholder="X-A" required />
+            </label>
+            <button type="submit">Tambah Siswa</button>
+          </form>
+        </section>
+
+        <section class="card">
+          <h2>Data Kelas</h2>
+          <div id="classesList" class="classes-list"></div>
+        </section>
+      </main>
+
+      <section class="card">
+        <h2>Daftar Siswa</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nama</th>
+              <th>Kelas</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="studentsTable"></tbody>
+        </table>
+      </section>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/app.js"></script>
+  </body>
+</html>

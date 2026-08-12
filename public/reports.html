@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Absensi - Laporan</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body data-page="reports">
+    <div class="container">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Sypesantren Jagat Ar</p>
+          <h1>Laporan Absensi</h1>
+        </div>
+        <nav class="topnav" aria-label="Navigasi utama">
+          <a href="/">Dashboard</a>
+          <a href="/attendance">Attendance</a>
+          <a href="/students">Students</a>
+          <a href="/teachers">Teachers</a>
+          <a href="/reports" class="active">Reports</a>
+          <a href="/kiosk">Kiosk</a>
+        </nav>
+        <div class="header-date" id="currentDate"></div>
+      </header>
+
+      <section class="secondary-grid">
+        <div class="card report-card">
+          <h2>Ringkasan Harian</h2>
+          <div class="filter-row">
+            <label>
+              <span>Tanggal</span>
+              <input id="reportDate" type="date" />
+            </label>
+            <label>
+              <span>Kelas</span>
+              <select id="classFilter">
+                <option value="all">Semua</option>
+              </select>
+            </label>
+          </div>
+          <button id="exportCsvBtn" class="secondary-btn" type="button">Export CSV</button>
+          <div id="reportSummary" class="report-summary"></div>
+        </div>
+
+        <div class="card report-card">
+          <h2>Ringkasan Bulanan</h2>
+          <div class="filter-row">
+            <label>
+              <span>Bulan</span>
+              <input id="monthlyMonth" type="month" />
+            </label>
+            <label>
+              <span>Kelas</span>
+              <select id="monthlyClassFilter">
+                <option value="all">Semua</option>
+              </select>
+            </label>
+          </div>
+          <button id="exportMonthlyCsvBtn" class="secondary-btn" type="button">Export CSV Bulanan</button>
+          <div id="monthlySummary" class="report-summary"></div>
+        </div>
+      </section>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/app.js"></script>
+  </body>
+</html>

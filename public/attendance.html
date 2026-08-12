@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Absensi - Kehadiran</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body data-page="attendance">
+    <div class="container">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Sypesantren Jagat Ar</p>
+          <h1>Catat Kehadiran</h1>
+        </div>
+        <nav class="topnav" aria-label="Navigasi utama">
+          <a href="/">Dashboard</a>
+          <a href="/attendance" class="active">Attendance</a>
+          <a href="/students">Students</a>
+          <a href="/teachers">Teachers</a>
+          <a href="/reports">Reports</a>
+          <a href="/kiosk">Kiosk</a>
+        </nav>
+        <div class="header-date" id="currentDate"></div>
+      </header>
+
+      <main class="content-grid">
+        <section class="card form-card">
+          <h2>Input Kehadiran</h2>
+          <form id="attendanceForm">
+            <div class="field-row">
+              <label>
+                <span>Role</span>
+                <select id="role" name="role">
+                  <option value="student">Siswa</option>
+                  <option value="teacher">Guru</option>
+                </select>
+              </label>
+              <label>
+                <span>Status</span>
+                <select id="status" name="status">
+                  <option value="present">Hadir</option>
+                  <option value="late">Terlambat</option>
+                  <option value="absent">Tidak Hadir</option>
+                </select>
+              </label>
+            </div>
+
+            <label>
+              <span>Nama</span>
+              <input id="personName" name="name" type="text" placeholder="Masukkan nama" required />
+            </label>
+
+            <label>
+              <span>ID</span>
+              <input id="personId" name="personId" type="text" placeholder="Contoh: S-101 atau G-201" required />
+            </label>
+
+            <button type="submit">Simpan Kehadiran</button>
+          </form>
+        </section>
+
+        <section class="card list-card">
+          <h2>Daftar Kehadiran Hari Ini</h2>
+          <div id="attendanceList" class="rows"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/app.js"></script>
+  </body>
+</html>
